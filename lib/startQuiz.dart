@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:confetti/confetti.dart';
 import './quizpart.dart';
+import 'dart:math';
 
 class startQuiz extends StatefulWidget {
   startQuiz({super.key});
@@ -8,7 +10,146 @@ class startQuiz extends StatefulWidget {
   State<startQuiz> createState() => _startQuizState();
 }
 
-class _startQuizState extends State<startQuiz> {
+class _startQuizState extends State<startQuiz> with SingleTickerProviderStateMixin{
+  late ConfettiController _controllerCenter;
+  late ConfettiController _controllerCenterRight;
+  late ConfettiController _controllerCenterLeft;
+  late ConfettiController _controllerTopCenter;
+  late ConfettiController _controllerBottomCenter;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllerCenter =
+        ConfettiController(duration: const Duration(seconds: 10));
+    _controllerCenterRight =
+        ConfettiController(duration: const Duration(seconds: 10));
+    _controllerCenterLeft =
+        ConfettiController(duration: const Duration(seconds: 10));
+    _controllerTopCenter =
+        ConfettiController(duration: const Duration(seconds: 10));
+    _controllerBottomCenter =
+        ConfettiController(duration: const Duration(seconds: 10));
+  }
+
+  @override
+  void dispose() {
+    _controllerCenter.dispose();
+    _controllerCenterRight.dispose();
+    _controllerCenterLeft.dispose();
+    _controllerTopCenter.dispose();
+    _controllerBottomCenter.dispose();
+    super.dispose();
+  }
+
+  /// A custom Path to paint stars.
+  Path drawStar(Size size) {
+    // Method to convert degree to radians
+    double degToRad(double deg) => deg * (pi / 180.0);
+
+    const numberOfPoints = 5;
+    final halfWidth = size.width / 2;
+    final externalRadius = halfWidth;
+    final internalRadius = halfWidth / 2.5;
+    final degreesPerStep = degToRad(360 / numberOfPoints);
+    final halfDegreesPerStep = degreesPerStep / 2;
+    final path = Path();
+    final fullAngle = degToRad(360);
+    path.moveTo(size.width, halfWidth);
+
+    for (double step = 0; step < fullAngle; step += degreesPerStep) {
+      path.lineTo(halfWidth + externalRadius * cos(step),
+          halfWidth + externalRadius * sin(step));
+      path.lineTo(halfWidth + internalRadius * cos(step + halfDegreesPerStep),
+          halfWidth + internalRadius * sin(step + halfDegreesPerStep));
+    }
+    path.close();
+    return path;
+  }
+
+  Path drawcircularconfetti(Size size) {
+  // Method to convert degree to radians
+  double degToRad(double deg) => deg * (pi / 180.0);
+
+  final numberOfSprays = 10;  // Number of firework trails
+  final baseRadius = size.width / 4;  // Base radius of the firework
+  final extent = size.width / 3;  // Distance the trails extend
+  final path = Path();
+
+  // Create a central circle for the firework's core
+  path.addOval(Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: baseRadius));
+
+  // Generate random spray trails with varying angles and lengths
+  for (int i = 0; i < numberOfSprays; i++) {
+    final angle = degToRad(Random().nextDouble() * 360);
+    final length = Random().nextDouble() * extent;
+    final endPoint = Offset(
+       (size.width / 2) + cos(angle) * length,
+       (size.height / 2) + sin(angle) * length
+    );
+    path.moveTo(size.width / 2, size.height / 2);
+    path.lineTo(endPoint.dx, endPoint.dy);
+  }
+
+  return path;
+}
+
+Path drawFireworks(Size size) {
+  // Method to convert degree to radians
+  double degToRad(double deg) => deg * (pi / 180.0);
+
+  final numberOfBursts = 10; // Number of bursts in the firework
+  final baseRadius = size.width / 10; // Base radius of the firework burst
+  final extent = size.width / 3; // Distance the bursts extend
+  final path = Path();
+
+  // Generate random bursts with varying angles and lengths
+  for (int i = 0; i < numberOfBursts; i++) {
+    final angle = degToRad(Random().nextDouble() * 360);
+    final length = baseRadius + Random().nextDouble() * extent;
+    final endPoint = Offset(
+      (size.width / 2) + cos(angle) * length,
+      (size.height / 2) + sin(angle) * length,
+    );
+
+    final controlPoint1 = Offset(
+      (size.width / 2) + cos(angle + degToRad(45)) * (length / 2),
+      (size.height / 2) + sin(angle + degToRad(45)) * (length / 2),
+    );
+
+    final controlPoint2 = Offset(
+      (size.width / 2) + cos(angle - degToRad(45)) * (length / 2),
+      (size.height / 2) + sin(angle - degToRad(45)) * (length / 2),
+    );
+
+    path.moveTo(size.width / 2, size.height / 2);
+    path.cubicTo(
+      controlPoint1.dx,
+      controlPoint1.dy,
+      controlPoint2.dx,
+      controlPoint2.dy,
+      endPoint.dx,
+      endPoint.dy,
+    );
+  }
+
+  return path;
+}
+
+
+  // late final FireworkController _controller = FireworkController(vsync: this)
+  //   ..start()
+  //   ..autoLaunchDuration = Duration.zero
+  //   ..rocketSpawnTimeout = Duration.zero
+  //   ..title = '';
+  // final _random = Random();
+
+  // @override
+  // void dispose() {
+  //   _controller.dispose();
+  //   super.dispose();
+  // }
+
   var extroScore = 0;
   var introScore = 0;
   var ambiScore = 0;
@@ -117,13 +258,58 @@ class _startQuizState extends State<startQuiz> {
     Padding(
     padding: EdgeInsets.all(220.0),
     child: Column(children: [
-      Text('You\'re an' , style: TextStyle(fontSize: 15)),
-      Text(introScore > extroScore && introScore > ambiScore? "Introvert": 
+      SafeArea(
+      child: Stack(
+        children: <Widget>[
+          Align(
+            alignment: Alignment.center,
+            child: ConfettiWidget(
+              confettiController: _controllerCenter,
+              blastDirectionality: BlastDirectionality
+                  .explosive, // don't specify a direction, blast randomly
+              shouldLoop:
+                  true, // start again as soon as the animation is finished
+              colors: const [
+                Colors.green,
+                Colors.blue,
+                Colors.pink,
+                Colors.orange,
+                Colors.purple
+              ], // manually specify the colors to be used
+              createParticlePath: drawcircularconfetti, // define a custom shape/path.
+          ),
+          ),
+      Align(
+        alignment: Alignment.center,
+        child: (){
+          _controllerCenter.play();
+          // _controller.spawnRocket(
+          // Point(
+          //   _random.nextDouble() * _controller.windowSize.width,
+          //   _random.nextDouble() * _controller.windowSize.height / 2,
+          // ),
+          // forceSpawn: true,
+          //);
+        }()
+      ),
+      Align(
+        alignment: Alignment.center,
+        child: Text('You\'re an' , style: TextStyle(fontSize: 15)),
+      ),
+      Align(
+        alignment: Alignment.center,
+        child: Padding(padding: EdgeInsets.only(top: 13), child: Text(introScore > extroScore && introScore > ambiScore? "Introvert": 
                   extroScore > introScore && extroScore > ambiScore? "Extrovert": 
-                  ambiScore > introScore && ambiScore > extroScore? "Ambivert": "", style: TextStyle(fontSize: 30),),
-      Padding(padding: EdgeInsets.only(top: 13), child: ElevatedButton(style: style , onPressed: () {
+                  ambiScore > introScore && ambiScore > extroScore? "Ambivert": "", style: TextStyle(fontSize: 30),),),
+      ),
+      Align(
+        alignment: Alignment.center,
+        child: Padding(padding: EdgeInsets.only(top: 53), child: ElevatedButton(style: style , onPressed: () {
         Navigator.pop(context);
-      }, child: Text('Try Again!'))) 
+      }, child: Text('Try Again!')))
+      ),
+    ]),
+    ), 
     ],)
     ),             
     )
